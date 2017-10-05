@@ -19,14 +19,8 @@
  * |factory /widgets/tree_display()
  **********************************************************************/
 
-Poco::Logger& logger()
-{
-    static Poco::Logger &_logger = Poco::Logger::get("TreeDisplay");
-    return _logger;
-}
 
-// Register type for QT slot
-static int PothosObjectId = qRegisterMetaType< Pothos::Object >("Pothos::Object");
+static int PothosObjectId = qRegisterMetaType< Pothos::Object >("Pothos::Object"); // Register type for QT slot
 
 
 class TreeDisplay : public QTreeView, public Pothos::Block
@@ -39,10 +33,16 @@ public:
         return new TreeDisplay();
     }
 
+    static Poco::Logger& logger()
+    {
+        static Poco::Logger &_logger = Poco::Logger::get("TreeDisplay");
+        return _logger;
+    }
+
     TreeDisplay(void):
         _standardItemModel(new QStandardItemModel())
     {
-        // SEtup GUI
+        // Setup GUI
         QStringList headerStr;
         headerStr.append("Key/Index");
         headerStr.append("Value");
@@ -62,42 +62,45 @@ public:
 
     QString objectToString(const Pothos::Object &object)
     {
-        return QString("(%1) %2").
-                arg(QString::fromStdString(object.getTypeString())).
-                arg(QString::fromStdString(object.toString()));
+        return QString("(%1) %2")
+            .arg(QString::fromStdString(object.getTypeString()))
+            .arg(QString::fromStdString(object.toString()));
     }
 
-    QList< QStandardItem* > createRow(const Pothos::Object &object, const std::string &key, const std::string &value)
+    QStandardItem* createAndAppendRow(QStandardItem *parent, const QString &key, const Pothos::Object &object, const QString &value)
     {
         QList< QStandardItem* > standardItemList;
-        auto keyItem = new QStandardItem(QString::fromStdString(key));
+        auto keyItem = new QStandardItem(key);
+        // Make item readonly
         keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
         standardItemList.append(keyItem);
 
-        auto dataItem = new QStandardItem(QString::fromStdString(value));
+        auto dataItem = new QStandardItem(value);
+        // Make item readonly
         dataItem->setFlags(dataItem->flags() & ~Qt::ItemIsEditable);
+        // Set the tool tip to show the data type for this item
         dataItem->setToolTip(QString::fromStdString(object.getTypeString()));
         standardItemList.append(dataItem);
 
-        return standardItemList;
+        parent->appendRow(standardItemList);
+        return standardItemList[0];
     }
 
-    QList< QStandardItem* > createRow(const Pothos::Object &object, const std::string &key)
+    QStandardItem* createAndAppendRow(QStandardItem *parent, const QString &key, const Pothos::Object &object)
     {
-        return createRow(object, key, objectToString(object).toStdString());
+        return createAndAppendRow(parent, key, object, objectToString(object));
     }
 
-    void walkObject(const Pothos::Object &object, const std::string &key, QStandardItem *parent)
+    void walkObject(QStandardItem *parent, const QString &key, const Pothos::Object &object)
     {
         if (object.canConvert(typeid(Pothos::ObjectVector)))
         {
-            auto item = createRow(object, key);
-            parent->appendRow(item);
+            auto item = createAndAppendRow(parent, key, object);
             try {
-                const auto &objectVector = object.convert< Pothos::ObjectVector >();
+                const auto objectVector = object.convert< Pothos::ObjectVector >();
                 for (size_t i = 0; i < objectVector.size(); ++i)
                 {
-                    walkObject(objectVector[i], std::to_string(i), item[0]);
+                    walkObject(item, QString::number(i), objectVector[i]);
                 }
             }
             catch (const std::exception &e) {
@@ -108,13 +111,12 @@ public:
 
         if (object.canConvert(typeid(Pothos::ObjectMap)))
         {
-            auto item = createRow(object, key);
-            parent->appendRow(item);
+            auto item = createAndAppendRow(parent, key, object);
             try {
-                const auto &objectMap = object.convert< Pothos::ObjectMap >();
+                const auto objectMap = object.convert< Pothos::ObjectMap >();
                 for (const auto &pair : objectMap)
                 {
-                    walkObject(pair.second, objectToString(pair.first).toStdString(), item[0]);
+                    walkObject(item, objectToString(pair.first), pair.second);
                 }
             }
             catch (const std::exception &e) {
@@ -124,7 +126,7 @@ public:
         }
 
         // For all other data types use built in convert
-        parent->appendRow(createRow(object, key));
+        createAndAppendRow(parent, key, object);
         return;
     }
 
@@ -138,13 +140,13 @@ public slots:
     void _setValue(Pothos::Object object)
     {
         _standardItemModel->removeRows(0, _standardItemModel->rowCount(QModelIndex()), QModelIndex());
-        walkObject(object, "", _standardItemModel->invisibleRootItem());
+        walkObject(_standardItemModel->invisibleRootItem(), QString(), object);
 
         this->expandAll();
     }
 
 private:
-    std::shared_ptr< QStandardItemModel > _standardItemModel;
+    std::unique_ptr< QStandardItemModel > _standardItemModel;
 };
 
 static Pothos::BlockRegistry registerTextDisplay(
