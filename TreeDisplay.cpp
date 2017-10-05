@@ -40,7 +40,7 @@ public:
     }
 
     TreeDisplay(void):
-        _standardItemModel( new QStandardItemModel( ) )
+        _standardItemModel(new QStandardItemModel())
     {
         // SEtup GUI
         QStringList headerStr;
@@ -74,7 +74,7 @@ public:
         keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
         standardItemList.append(keyItem);
 
-        auto dataItem = new QStandardItem( QString::fromStdString(value));
+        auto dataItem = new QStandardItem(QString::fromStdString(value));
         dataItem->setFlags(dataItem->flags() & ~Qt::ItemIsEditable);
         dataItem->setToolTip(QString::fromStdString(object.getTypeString()));
         standardItemList.append(dataItem);
@@ -100,7 +100,7 @@ public:
                     walkObject(objectVector[i], std::to_string(i), item[0]);
                 }
             }
-            catch (std::exception e) {
+            catch (const std::exception &e) {
                 poco_error(logger(), "walkObject Pothos::ObjectVector exception: " + std::string(e.what()));
             }
             return;
@@ -109,7 +109,7 @@ public:
         if (object.canConvert(typeid(Pothos::ObjectMap)))
         {
             auto item = createRow(object, key);
-            parent->appendRow( item );
+            parent->appendRow(item);
             try {
                 const auto &objectMap = object.convert< Pothos::ObjectMap >();
                 for (const auto &pair : objectMap)
@@ -117,7 +117,7 @@ public:
                     walkObject(pair.second, objectToString(pair.first).toStdString(), item[0]);
                 }
             }
-            catch (std::exception e) {
+            catch (const std::exception &e) {
                 poco_error(logger(), "walkObject Pothos::ObjectMap exception: " + std::string(e.what()));
             }
             return;
