@@ -95,7 +95,7 @@ public:
     {
         if (object.canConvert(typeid(Pothos::ObjectVector)))
         {
-            auto item = createAndAppendRow(parent, key, object);
+            auto item = createAndAppendRow(parent, key, object, QString::fromStdString(object.getTypeString()));
             try {
                 const auto objectVector = object.convert< Pothos::ObjectVector >();
                 for (size_t i = 0; i < objectVector.size(); ++i)
@@ -111,7 +111,7 @@ public:
 
         if (object.canConvert(typeid(Pothos::ObjectMap)))
         {
-            auto item = createAndAppendRow(parent, key, object);
+            auto item = createAndAppendRow(parent, key, object, QString::fromStdString(object.getTypeString()));
             try {
                 const auto objectMap = object.convert< Pothos::ObjectMap >();
                 for (const auto &pair : objectMap)
