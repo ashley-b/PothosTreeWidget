@@ -9,7 +9,8 @@
 /***********************************************************************
  * |PothosDoc Tree Display
  *
- * The tree display widget display's a object in a tree structure.
+ * The tree display widget can display object and packets in a tree structure,
+ * useful for debugging.
  * The display value can be set through setValue() slots.
  *
  * |category /Widgets
@@ -121,6 +122,51 @@ public:
             }
             catch (const std::exception &e) {
                 poco_error(logger(), "walkObject Pothos::ObjectMap exception: " + std::string(e.what()));
+            }
+            return;
+        }
+
+        if (object.canConvert(typeid(Pothos::Packet)))
+        {
+            auto item = createAndAppendRow(parent, key, object, QString::fromStdString(object.getTypeString()));
+            try {
+                const auto packet = object.convert< Pothos::Packet >();
+
+                Pothos::ObjectMap packetObject;
+
+                // Convert Pothos::Packet to a Pothos::Object to simplify displaying in tree
+
+                {
+                    Pothos::ObjectKwargs payloadObject;
+                    payloadObject["dtype"] = Pothos::Object(packet.payload.dtype.toMarkup());
+                    payloadObject["length"] = Pothos::Object(packet.payload.length);
+                    packetObject[Pothos::Object("payload")] = Pothos::Object::make(payloadObject);
+                }
+
+                packetObject[Pothos::Object("metadata")] = Pothos::Object::make(packet.metadata);
+
+                {
+                    Pothos::ObjectVector labelsObject;
+                    for (const auto &label : packet.labels)
+                    {
+                        Pothos::ObjectKwargs labelObject;
+                        labelObject["data"] = label.data;
+                        labelObject["id"] = Pothos::Object(label.id);
+                        labelObject["index"] = Pothos::Object(label.index);
+                        labelObject["width"] = Pothos::Object(label.width);
+
+                        labelsObject.push_back(Pothos::Object(labelObject));
+                    }
+                    packetObject[Pothos::Object("labels")] = Pothos::Object::make(labelsObject);
+                }
+
+                for (const auto &pair : packetObject)
+                {
+                    walkObject(item, objectToString(pair.first), pair.second);
+                }
+            }
+            catch (const std::exception &e) {
+                poco_error(logger(), "walkObject Pothos::Packet exception: " + std::string(e.what()));
             }
             return;
         }
