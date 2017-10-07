@@ -5,6 +5,7 @@
 #include <QBoxLayout>
 #include <QLabel>
 #include <QTreeView>
+#include <QHeaderView>
 #include <QStandardItemModel>
 #include <Poco/Logger.h>
 
@@ -209,6 +210,16 @@ public slots:
         walkObject(_standardItemModel->invisibleRootItem(), QString(), object);
 
         _treeView->expandAll();
+    }
+
+    QVariant saveState(void) const
+    {
+        return _treeView->header()->saveState();
+    }
+
+    void restoreState(const QVariant &state)
+    {
+        _treeView->header()->restoreState(state.toByteArray());
     }
 
 private:
