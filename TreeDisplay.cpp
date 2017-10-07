@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSL-1.0
 
 #include <Pothos/Framework.hpp>
+#include <QBoxLayout>
+#include <QLabel>
 #include <QTreeView>
 #include <QStandardItemModel>
 #include <Poco/Logger.h>
@@ -16,15 +18,20 @@
  * |category /Widgets
  * |keywords tree display
  *
+ * |param title The name of the value displayed by this widget
+ * |default "Object as Tree"
+ * |widget StringEntry()
+ *
  * |mode graphWidget
  * |factory /widgets/tree_display()
+ * |setter setTitle(title)
  **********************************************************************/
 
 
 static int PothosObjectId = qRegisterMetaType< Pothos::Object >("Pothos::Object"); // Register type for QT slot
 
 
-class TreeDisplay : public QTreeView, public Pothos::Block
+class TreeDisplay : public QWidget, public Pothos::Block
 {
     Q_OBJECT
 public:
@@ -41,24 +48,37 @@ public:
     }
 
     TreeDisplay(void):
+        _layout(new QVBoxLayout(this)),
+        _label(new QLabel(this)),
+        _treeView(new QTreeView(this)),
         _standardItemModel(new QStandardItemModel())
     {
         // Setup GUI
+        _layout->setContentsMargins(QMargins());
+        _layout->addWidget(_label);
+        _layout->addWidget(_treeView);
+
         QStringList headerStr;
         headerStr.append("Key/Index");
         headerStr.append("Value");
         _standardItemModel->setHorizontalHeaderLabels(headerStr);
 
-        this->setModel(_standardItemModel.get());
+        _treeView->setModel(_standardItemModel.get());
 
         // Setup Pothos
         this->registerCall(this, POTHOS_FCN_TUPLE(TreeDisplay, widget));
+        this->registerCall(this, POTHOS_FCN_TUPLE(TreeDisplay, setTitle));
         this->registerCall(this, POTHOS_FCN_TUPLE(TreeDisplay, setValue));
     }
 
     QWidget *widget(void)
     {
         return this;
+    }
+
+    void setTitle(const QString &title)
+    {
+        QMetaObject::invokeMethod(_label, "setText", Qt::QueuedConnection, Q_ARG(QString, title));
     }
 
     QString objectToString(const Pothos::Object &object)
@@ -178,20 +198,23 @@ public:
 
     void setValue(const Pothos::Object &object)
     {
-        QMetaObject::invokeMethod(this, "_setValue", Qt::QueuedConnection, Q_ARG(Pothos::Object, object));
+        QMetaObject::invokeMethod(this, "setTreeValue", Qt::QueuedConnection, Q_ARG(Pothos::Object, object));
     }
 
 public slots:
 
-    void _setValue(Pothos::Object object)
+    void setTreeValue(Pothos::Object object)
     {
         _standardItemModel->removeRows(0, _standardItemModel->rowCount(QModelIndex()), QModelIndex());
         walkObject(_standardItemModel->invisibleRootItem(), QString(), object);
 
-        this->expandAll();
+        _treeView->expandAll();
     }
 
 private:
+    QVBoxLayout *_layout;
+    QLabel *_label;
+    QTreeView *_treeView;
     std::unique_ptr< QStandardItemModel > _standardItemModel;
 };
 
