@@ -2,7 +2,7 @@
 # Project setup
 ########################################################################
 cmake_minimum_required(VERSION 2.8.9)
-project(PothosWidgets CXX)
+project(PothosTreeWidget CXX)
 
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
     find_package(Pothos "0.4.0" CONFIG REQUIRED)

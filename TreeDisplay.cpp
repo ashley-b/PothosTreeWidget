@@ -59,10 +59,7 @@ public:
         _layout->addWidget(_label);
         _layout->addWidget(_treeView);
 
-        QStringList headerStr;
-        headerStr.append("Key/Index");
-        headerStr.append("Value");
-        _standardItemModel->setHorizontalHeaderLabels(headerStr);
+        _standardItemModel->setHorizontalHeaderLabels(QStringList({ "Key/Index", "Value" }));
 
         _treeView->setModel(_standardItemModel.get());
 
@@ -92,17 +89,20 @@ public:
     QStandardItem* createAndAppendRow(QStandardItem *parent, const QString &key, const Pothos::Object &object, const QString &value)
     {
         QList< QStandardItem* > standardItemList;
-        auto keyItem = new QStandardItem(key);
-        // Make item readonly
-        keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
-        standardItemList.append(keyItem);
-
-        auto dataItem = new QStandardItem(value);
-        // Make item readonly
-        dataItem->setFlags(dataItem->flags() & ~Qt::ItemIsEditable);
-        // Set the tool tip to show the data type for this item
-        dataItem->setToolTip(QString::fromStdString(object.getTypeString()));
-        standardItemList.append(dataItem);
+        {
+            auto keyItem = new QStandardItem(key);
+            // Make item readonly
+            keyItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+            standardItemList.append(keyItem);
+        }
+        {
+            auto dataItem = new QStandardItem(value);
+            // Make item readonly
+            dataItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+            // Set the tool tip to show the data type for this item
+            dataItem->setToolTip(QString::fromStdString(object.getTypeString()));
+            standardItemList.append(dataItem);
+        }
 
         parent->appendRow(standardItemList);
         return standardItemList[0];
