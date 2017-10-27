@@ -161,6 +161,7 @@ public:
                     Pothos::ObjectKwargs payloadObject;
                     payloadObject["dtype"] = Pothos::Object(packet.payload.dtype.toMarkup());
                     payloadObject["length"] = Pothos::Object(packet.payload.length);
+                    payloadObject["elements"] = Pothos::Object(packet.payload.elements());
                     packetObject[Pothos::Object("payload")] = Pothos::Object::make(payloadObject);
                 }
 
